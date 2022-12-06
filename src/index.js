@@ -1,32 +1,46 @@
-import express from 'express';
-import morgan from 'morgan';
-import path, { dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { engine } from 'express-handlebars';
-
+const express = require('express');
+const morgan = require('morgan');
+const route = require('./routes');
+const methodOverride = require('method-override');
+const db = require('./resources/config/db');
+const hanleBars = require('express-handlebars');
+const path = require('path');
 const app = express();
 const port = 3000;
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+
+//Connect to DB
+db.connect();
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(
+    express.urlencoded({
+        extended: true,
+    })
+); // Xử lí data từ query -> body
+app.use(express.json()); // Xử lí data trong form data -> dạng json
+
+app.use(methodOverride('_method'));
 
 //HTTP logger
 app.use(morgan('combined'));
 
 //Template engine
-app.engine('hbs', engine({
-    extname: '.hbs'
-}));
+app.engine(
+    'hbs',
+    hanleBars.engine({
+        extname: '.hbs',
+        helpers: {
+            sum: (a, b) => a + b,
+        }
+    })
+);
 app.set('view engine', 'hbs');
-app.set('views', path.join(__dirname, "resources/views"));
+app.set('views', path.join(__dirname, 'resources', 'views'));
 
-app.get('/', (req, res) => {
-    res.render('home');
-});
+//Routes init
+route(app);
 
-app.get('/new', (req, res) => {
-    res.render('new');
-});
-
-app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
+app.listen(port, () =>
+    console.log(`App listening at http://localhost:${port}`)
+);
